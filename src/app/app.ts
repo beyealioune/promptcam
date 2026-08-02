@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import {
   LucideCameraOff,
   LucideCheck,
@@ -97,12 +99,27 @@ export class App implements AfterViewInit, OnDestroy {
   private toastId: ReturnType<typeof setTimeout> | null = null;
 
   async ngAfterViewInit(): Promise<void> {
+    await this.configureStatusBar();
     const saved = await this.storage.loadSettings();
     this.script.set(saved.script || DEFAULT_SCRIPT);
     this.speed.set(saved.speed ?? 3);
     this.fontSize.set(saved.fontSize ?? 24);
     this.mirrored.set(saved.mirrored ?? true);
     await Promise.allSettled([this.initCamera(), this.subscription.initialize()]);
+  }
+
+  private async configureStatusBar(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
+
+    await StatusBar.setStyle({ style: Style.Light });
+    if (Capacitor.getPlatform() === 'android') {
+      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.setBackgroundColor({ color: '#7c3aed' });
+    } else {
+      // iOS utilise une barre transparente : la zone sûre violette du header
+      // fournit le fond, sans jamais placer les contrôles sous le Wi-Fi.
+      await StatusBar.setOverlaysWebView({ overlay: true });
+    }
   }
 
   ngOnDestroy(): void {

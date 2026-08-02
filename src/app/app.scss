@@ -26,7 +26,13 @@ svg { display: inline-flex; width: 1em; height: 1em; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: rgba(255,255,255,.94);
+  background: linear-gradient(
+    to bottom,
+    #7c3aed 0,
+    #7c3aed env(safe-area-inset-top),
+    rgba(255,255,255,.94) env(safe-area-inset-top),
+    rgba(255,255,255,.94) 100%
+  );
   border-bottom: 1px solid #f1f5f9;
   z-index: 20;
 }

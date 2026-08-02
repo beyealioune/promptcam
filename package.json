@@ -38,6 +38,7 @@
     "@capacitor/ios": "^8.4.2",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.3",
     "@lucide/angular": "^1.28.0",
     "@revenuecat/purchases-capacitor": "^13.2.5",
     "rxjs": "~7.8.0",
