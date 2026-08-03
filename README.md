@@ -11,6 +11,7 @@ Application de prompteur vidéo Angular + Capacitor pour iOS, Android, télépho
 - version gratuite limitée à 280 caractères (environ 4 à 5 phrases) ;
 - Premium illimité avec achat et restauration RevenueCat ;
 - aperçu, suppression, sauvegarde et partage natif de la vidéo ;
+- export réel dans l’album **PromptCam** de la galerie Android et dans **Photos** sur iOS ;
 - interface responsive basée sur le design fourni.
 
 ## Lancer le projet

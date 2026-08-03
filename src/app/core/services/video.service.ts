@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
+import { Media } from '@capacitor-community/media';
 import { SavedVideo } from '../models/app.models';
 
 const VIDEOS_KEY = 'promptcam.videos';
@@ -32,6 +33,21 @@ export class VideoService {
       data,
       directory: Directory.Documents,
     });
+
+    // Filesystem.writeFile conserve une copie privée pour la vidéothèque interne.
+    // Media.saveVideo publie réellement la vidéo dans Photos/Galerie du téléphone.
+    if (Capacitor.getPlatform() === 'android') {
+      const albumIdentifier = await this.getAndroidAlbumIdentifier();
+      await Media.saveVideo({
+        path: result.uri,
+        albumIdentifier,
+        fileName: name.replace(/\.[^.]+$/, ''),
+      });
+    } else {
+      // Sans albumIdentifier, iOS demande seulement l'autorisation « ajout seul ».
+      await Media.saveVideo({ path: result.uri });
+    }
+
     const video: SavedVideo = { name, uri: result.uri, createdAt };
     await this.addToList(video);
     return video;
@@ -75,6 +91,19 @@ export class VideoService {
       key: VIDEOS_KEY,
       value: JSON.stringify([video, ...list].slice(0, 20)),
     });
+  }
+
+  private async getAndroidAlbumIdentifier(): Promise<string> {
+    const albumName = 'PromptCam';
+    let { albums } = await Media.getAlbums();
+    let album = albums.find((item) => item.name === albumName);
+    if (!album) {
+      await Media.createAlbum({ name: albumName });
+      ({ albums } = await Media.getAlbums());
+      album = albums.find((item) => item.name === albumName);
+    }
+    if (!album) throw new Error('PROMPTCAM_ALBUM_NOT_CREATED');
+    return album.identifier;
   }
 
   private toBase64(blob: Blob): Promise<string> {
