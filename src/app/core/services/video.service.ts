@@ -7,10 +7,11 @@ import { Media } from '@capacitor-community/media';
 import { SavedVideo } from '../models/app.models';
 
 const VIDEOS_KEY = 'promptcam.videos';
+export type VideoSaveDestination = 'gallery' | 'download' | 'share';
 
 @Injectable({ providedIn: 'root' })
 export class VideoService {
-  async save(blob: Blob): Promise<SavedVideo> {
+  async save(blob: Blob): Promise<{ video: SavedVideo; destination: VideoSaveDestination }> {
     const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
     const name = `PromptCam_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
     const createdAt = new Date().toISOString();
@@ -24,7 +25,7 @@ export class VideoService {
       URL.revokeObjectURL(url);
       const video: SavedVideo = { name, uri: name, createdAt };
       await this.addToList(video);
-      return video;
+      return { video, destination: 'download' };
     }
 
     const data = await this.toBase64(blob);
@@ -36,21 +37,30 @@ export class VideoService {
 
     // Filesystem.writeFile conserve une copie privée pour la vidéothèque interne.
     // Media.saveVideo publie réellement la vidéo dans Photos/Galerie du téléphone.
-    if (Capacitor.getPlatform() === 'android') {
-      const albumIdentifier = await this.getAndroidAlbumIdentifier();
-      await Media.saveVideo({
-        path: result.uri,
-        albumIdentifier,
-        fileName: name.replace(/\.[^.]+$/, ''),
+    let destination: VideoSaveDestination = 'gallery';
+    try {
+      if (Capacitor.getPlatform() === 'android') {
+        const albumIdentifier = await this.getAndroidAlbumIdentifier();
+        await Media.saveVideo({
+          path: result.uri,
+          albumIdentifier,
+          fileName: name.replace(/\.[^.]+$/, ''),
+        });
+      } else {
+        await Media.saveVideo({ path: result.uri });
+      }
+    } catch {
+      destination = 'share';
+      await Share.share({
+        title: 'Enregistrer la vidéo PromptCam',
+        url: result.uri,
+        dialogTitle: 'Choisissez « Enregistrer la vidéo »',
       });
-    } else {
-      // Sans albumIdentifier, iOS demande seulement l'autorisation « ajout seul ».
-      await Media.saveVideo({ path: result.uri });
     }
 
     const video: SavedVideo = { name, uri: result.uri, createdAt };
     await this.addToList(video);
-    return video;
+    return { video, destination };
   }
 
   async listVideos(): Promise<SavedVideo[]> {

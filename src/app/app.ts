@@ -119,13 +119,9 @@ export class App implements AfterViewInit, OnDestroy {
     if (!Capacitor.isNativePlatform()) return;
 
     await StatusBar.setStyle({ style: Style.Light });
+    await StatusBar.setOverlaysWebView({ overlay: false });
     if (Capacitor.getPlatform() === 'android') {
-      await StatusBar.setOverlaysWebView({ overlay: false });
       await StatusBar.setBackgroundColor({ color: '#7c3aed' });
-    } else {
-      // iOS utilise une barre transparente : la zone sûre violette du header
-      // fournit le fond, sans jamais placer les contrôles sous le Wi-Fi.
-      await StatusBar.setOverlaysWebView({ overlay: true });
     }
   }
 
@@ -262,20 +258,21 @@ export class App implements AfterViewInit, OnDestroy {
     if (!this.stream) return;
     this.chunks = [];
 
-    // When mirrored, capture from a canvas so the recorded video matches the preview
-    const recordStream = this.mirrored() ? this.buildMirroredStream() : this.stream;
+    const isIos = Capacitor.getPlatform() === 'ios';
+    // Le flux canvas peut faire basculer WebKit vers WebM, refusé par Photos.
+    const recordStream = !isIos && this.mirrored() ? this.buildMirroredStream() : this.stream;
 
-    const mimeType = [
-      'video/mp4;codecs=h264,aac',
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-    ].find((type) => MediaRecorder.isTypeSupported(type));
-    this.recorder = new MediaRecorder(recordStream, mimeType ? { mimeType } : undefined);
+    try {
+      this.recorder = this.createRecorder(recordStream, isIos);
+    } catch {
+      this.showToast("Ce téléphone ne permet pas l'enregistrement MP4");
+      return;
+    }
     this.recorder.ondataavailable = ({ data }) => data.size && this.chunks.push(data);
     this.recorder.onstop = () => {
       if (this.canvasRafId !== null) cancelAnimationFrame(this.canvasRafId);
       this.canvasRafId = null;
-      this.preparePreview();
+      void this.preparePreview();
     };
     this.recorder.start(1000);
     this.isRecording.set(true);
@@ -307,6 +304,29 @@ export class App implements AfterViewInit, OnDestroy {
     return canvasStream;
   }
 
+  private createRecorder(stream: MediaStream, isIos: boolean): MediaRecorder {
+    const iosTypes = [
+      'video/mp4',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4;codecs=h264,aac',
+    ];
+    const androidTypes = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/mp4',
+    ];
+    const supported = (isIos ? iosTypes : androidTypes)
+      .find((type) => MediaRecorder.isTypeSupported(type));
+
+    if (supported) return new MediaRecorder(stream, { mimeType: supported });
+
+    const recorder = new MediaRecorder(stream);
+    if (isIos && recorder.mimeType && !recorder.mimeType.includes('mp4')) {
+      throw new Error(`Unsupported iOS recording format: ${recorder.mimeType}`);
+    }
+    return recorder;
+  }
+
   private stopRecording(): void {
     this.recorder?.stop();
     this.isRecording.set(false);
@@ -315,10 +335,20 @@ export class App implements AfterViewInit, OnDestroy {
     this.timerId = null;
   }
 
-  private preparePreview(): void {
-    // iOS MediaRecorder produces mp4 natively; fall back to mp4 on iOS if mimeType is empty
-    const iosFallback = Capacitor.getPlatform() === 'ios' ? 'video/mp4' : 'video/webm';
-    const type = this.recorder?.mimeType || iosFallback;
+  private async preparePreview(): Promise<void> {
+    const rawBlob = new Blob(this.chunks, { type: this.recorder?.mimeType });
+    const header = new Uint8Array(await rawBlob.slice(0, 12).arrayBuffer());
+    const signature = String.fromCharCode(...header.slice(4, 8));
+    const isMp4 = signature === 'ftyp';
+    const type = isMp4 ? 'video/mp4' : (this.recorder?.mimeType || 'video/webm');
+
+    if (Capacitor.getPlatform() === 'ios' && !isMp4) {
+      this.recordedBlob = null;
+      this.chunks = [];
+      this.showToast("Format vidéo incompatible avec Photos. Réessayez l'enregistrement.");
+      return;
+    }
+
     this.recordedBlob = new Blob(this.chunks, { type });
     if (this.previewSrc()) URL.revokeObjectURL(this.previewSrc());
     this.previewSrc.set(URL.createObjectURL(this.recordedBlob));
@@ -329,12 +359,14 @@ export class App implements AfterViewInit, OnDestroy {
     if (!this.recordedBlob) return;
     this.busy.set(true);
     try {
-      await this.videos.save(this.recordedBlob);
+      const result = await this.videos.save(this.recordedBlob);
       this.closePreview();
       this.recordedBlob = null;
       this.chunks = [];
       this.galleryVideos.set(await this.videos.listVideos());
-      this.showToast('Vidéo enregistrée dans votre galerie');
+      this.showToast(result.destination === 'gallery'
+        ? 'Vidéo enregistrée dans votre galerie'
+        : 'Vidéo prête : choisissez « Enregistrer la vidéo »');
     } catch {
       this.showToast("Impossible d'enregistrer la vidéo");
     } finally {
