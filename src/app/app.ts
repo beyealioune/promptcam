@@ -102,6 +102,7 @@ export class App implements AfterViewInit, OnDestroy {
   private lastFrame = 0;
   private timerId: ReturnType<typeof setInterval> | null = null;
   private toastId: ReturnType<typeof setTimeout> | null = null;
+  private canvasRafId: number | null = null;
 
   async ngAfterViewInit(): Promise<void> {
     await this.configureStatusBar();
@@ -256,21 +257,46 @@ export class App implements AfterViewInit, OnDestroy {
     this.chunks = [];
 
     const isIos = Capacitor.getPlatform() === 'ios';
-    // Always record the raw stream; CSS scaleX(-1) handles the mirror in the preview only
+    // When mirrored (front camera), record through a flipped canvas so the saved video is correctly oriented
+    const recordStream = this.mirrored() ? this.buildMirroredStream() : this.stream;
     try {
-      this.recorder = this.createRecorder(this.stream, isIos);
+      this.recorder = this.createRecorder(recordStream!, isIos);
     } catch {
       this.showToast("Ce téléphone ne permet pas l'enregistrement MP4");
       return;
     }
     this.recorder.ondataavailable = ({ data }) => data.size && this.chunks.push(data);
-    this.recorder.onstop = () => void this.preparePreview();
+    this.recorder.onstop = () => {
+      if (this.canvasRafId !== null) cancelAnimationFrame(this.canvasRafId);
+      this.canvasRafId = null;
+      void this.preparePreview();
+    };
     this.recorder.start(1000);
     this.isRecording.set(true);
     this.elapsed.set(0);
     this.timerId = setInterval(() => this.elapsed.update((seconds) => seconds + 1), 1000);
     this.resetPrompter();
     setTimeout(() => this.startScroll(), 250);
+  }
+
+  private buildMirroredStream(): MediaStream {
+    const video = this.camera.nativeElement;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d')!;
+    const draw = () => {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      this.canvasRafId = requestAnimationFrame(draw);
+    };
+    draw();
+    const canvasStream = canvas.captureStream(30);
+    this.stream!.getAudioTracks().forEach((track) => canvasStream.addTrack(track));
+    return canvasStream;
   }
 
   private createRecorder(stream: MediaStream, isIos: boolean): MediaRecorder {
