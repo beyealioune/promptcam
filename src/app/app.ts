@@ -66,7 +66,7 @@ export class App implements AfterViewInit, OnDestroy {
   readonly draft = signal('');
   readonly speed = signal(3);
   readonly fontSize = signal(24);
-  readonly mirrored = signal(false);
+  readonly mirrored = signal(true);
   readonly facingMode = signal<'user' | 'environment'>('user');
   readonly cameraError = signal(false);
   readonly scriptOpen = signal(false);
@@ -109,7 +109,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.script.set(saved.script || DEFAULT_SCRIPT);
     this.speed.set(saved.speed ?? 3);
     this.fontSize.set(saved.fontSize ?? 24);
-    this.mirrored.set(false);
+    this.mirrored.set(saved.mirrored ?? true);
     await Promise.allSettled([this.initCamera(), this.subscription.initialize()]);
   }
 
@@ -147,8 +147,8 @@ export class App implements AfterViewInit, OnDestroy {
   async toggleCamera(): Promise<void> {
     if (this.isRecording()) return;
     this.facingMode.update((mode) => (mode === 'user' ? 'environment' : 'user'));
-    // Mirror auto-off pour la caméra arrière
-    this.mirrored.set(false);
+    // Mirror on for front camera (selfie), off for back camera
+    this.mirrored.set(this.facingMode() === 'user');
     await this.initCamera();
     void this.persistSettings();
   }
