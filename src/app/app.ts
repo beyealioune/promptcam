@@ -19,19 +19,22 @@ import {
   LucideCrown,
   LucideDownload,
   LucideFileText,
+  LucideFilm,
   LucideFlipHorizontal,
   LucideGauge,
   LucideInfo,
   LucidePause,
   LucidePlay,
   LucideRotateCcw,
+  LucideShare2,
   LucideSquare,
+  LucideSwitchCamera,
   LucideTrash2,
   LucideType,
   LucideVideo,
   LucideX,
 } from '@lucide/angular';
-import { FREE_CHARACTER_LIMIT, PrompterSettings } from './core/models/app.models';
+import { FREE_CHARACTER_LIMIT, PrompterSettings, SavedVideo } from './core/models/app.models';
 import { StorageService } from './core/services/storage.service';
 import { SubscriptionService } from './core/services/subscription.service';
 import { VideoService } from './core/services/video.service';
@@ -46,7 +49,7 @@ const DEFAULT_SCRIPT =
     LucideVideo, LucideFileText, LucideCrown, LucideCameraOff, LucideFlipHorizontal,
     LucideChevronRight, LucideChevronLeft, LucideGauge, LucideType, LucideRotateCcw,
     LucidePlay, LucidePause, LucideSquare, LucideX, LucideCheck, LucideTrash2,
-    LucideDownload, LucideInfo,
+    LucideDownload, LucideInfo, LucideSwitchCamera, LucideFilm, LucideShare2,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -57,14 +60,15 @@ export class App implements AfterViewInit, OnDestroy {
   @ViewChild('preview') preview!: ElementRef<HTMLVideoElement>;
 
   readonly subscription = inject(SubscriptionService);
+  readonly videos = inject(VideoService);
   private readonly storage = inject(StorageService);
-  private readonly videos = inject(VideoService);
 
   readonly script = signal(DEFAULT_SCRIPT);
   readonly draft = signal('');
   readonly speed = signal(3);
   readonly fontSize = signal(24);
   readonly mirrored = signal(true);
+  readonly facingMode = signal<'user' | 'environment'>('user');
   readonly cameraError = signal(false);
   readonly scriptOpen = signal(false);
   readonly paywallOpen = signal(false);
@@ -76,6 +80,8 @@ export class App implements AfterViewInit, OnDestroy {
   readonly elapsed = signal(0);
   readonly busy = signal(false);
   readonly toast = signal('');
+  readonly galleryOpen = signal(false);
+  readonly galleryVideos = signal<SavedVideo[]>([]);
   readonly remainingCharacters = computed(() => FREE_CHARACTER_LIMIT - this.draft().length);
   readonly timer = computed(() => {
     const min = Math.floor(this.elapsed() / 60).toString().padStart(2, '0');
@@ -97,6 +103,7 @@ export class App implements AfterViewInit, OnDestroy {
   private lastFrame = 0;
   private timerId: ReturnType<typeof setInterval> | null = null;
   private toastId: ReturnType<typeof setTimeout> | null = null;
+  private canvasRafId: number | null = null;
 
   async ngAfterViewInit(): Promise<void> {
     await this.configureStatusBar();
@@ -133,7 +140,7 @@ export class App implements AfterViewInit, OnDestroy {
     try {
       this.stream?.getTracks().forEach((track) => track.stop());
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: this.facingMode(), width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: { echoCancellation: true, noiseSuppression: true },
       });
       this.camera.nativeElement.srcObject = this.stream;
@@ -141,6 +148,16 @@ export class App implements AfterViewInit, OnDestroy {
     } catch {
       this.cameraError.set(true);
     }
+  }
+
+  async toggleCamera(): Promise<void> {
+    if (this.isRecording()) return;
+    this.facingMode.update((mode) => (mode === 'user' ? 'environment' : 'user'));
+    // Mirror auto-off pour la caméra arrière
+    if (this.facingMode() === 'environment') this.mirrored.set(false);
+    else this.mirrored.set(true);
+    await this.initCamera();
+    void this.persistSettings();
   }
 
   openScript(): void {
@@ -244,20 +261,50 @@ export class App implements AfterViewInit, OnDestroy {
   private startRecording(): void {
     if (!this.stream) return;
     this.chunks = [];
+
+    // When mirrored, capture from a canvas so the recorded video matches the preview
+    const recordStream = this.mirrored() ? this.buildMirroredStream() : this.stream;
+
     const mimeType = [
       'video/mp4;codecs=h264,aac',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
     ].find((type) => MediaRecorder.isTypeSupported(type));
-    this.recorder = new MediaRecorder(this.stream, mimeType ? { mimeType } : undefined);
+    this.recorder = new MediaRecorder(recordStream, mimeType ? { mimeType } : undefined);
     this.recorder.ondataavailable = ({ data }) => data.size && this.chunks.push(data);
-    this.recorder.onstop = () => this.preparePreview();
+    this.recorder.onstop = () => {
+      if (this.canvasRafId !== null) cancelAnimationFrame(this.canvasRafId);
+      this.canvasRafId = null;
+      this.preparePreview();
+    };
     this.recorder.start(1000);
     this.isRecording.set(true);
     this.elapsed.set(0);
     this.timerId = setInterval(() => this.elapsed.update((seconds) => seconds + 1), 1000);
     this.resetPrompter();
     setTimeout(() => this.startScroll(), 250);
+  }
+
+  private buildMirroredStream(): MediaStream {
+    const video = this.camera.nativeElement;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d')!;
+
+    const draw = () => {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      this.canvasRafId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    const canvasStream = canvas.captureStream(30);
+    this.stream!.getAudioTracks().forEach((track) => canvasStream.addTrack(track));
+    return canvasStream;
   }
 
   private stopRecording(): void {
@@ -269,7 +316,9 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   private preparePreview(): void {
-    const type = this.recorder?.mimeType || 'video/webm';
+    // iOS MediaRecorder produces mp4 natively; fall back to mp4 on iOS if mimeType is empty
+    const iosFallback = Capacitor.getPlatform() === 'ios' ? 'video/mp4' : 'video/webm';
+    const type = this.recorder?.mimeType || iosFallback;
     this.recordedBlob = new Blob(this.chunks, { type });
     if (this.previewSrc()) URL.revokeObjectURL(this.previewSrc());
     this.previewSrc.set(URL.createObjectURL(this.recordedBlob));
@@ -282,12 +331,40 @@ export class App implements AfterViewInit, OnDestroy {
     try {
       await this.videos.save(this.recordedBlob);
       this.closePreview();
-      this.showToast('Vidéo enregistrée ou partagée');
+      this.recordedBlob = null;
+      this.chunks = [];
+      this.galleryVideos.set(await this.videos.listVideos());
+      this.showToast('Vidéo enregistrée dans votre galerie');
     } catch {
-      this.showToast('Impossible d’enregistrer la vidéo');
+      this.showToast("Impossible d'enregistrer la vidéo");
     } finally {
       this.busy.set(false);
     }
+  }
+
+  async openGallery(): Promise<void> {
+    this.galleryVideos.set(await this.videos.listVideos());
+    this.galleryOpen.set(true);
+  }
+
+  async shareGalleryVideo(video: SavedVideo): Promise<void> {
+    try {
+      await this.videos.share(video);
+    } catch {
+      this.showToast('Partage non disponible');
+    }
+  }
+
+  async deleteGalleryVideo(video: SavedVideo): Promise<void> {
+    await this.videos.deleteVideo(video);
+    this.galleryVideos.update((list) => list.filter((v) => v.uri !== video.uri));
+    this.showToast('Vidéo supprimée');
+  }
+
+  formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    });
   }
 
   deleteVideo(): void {

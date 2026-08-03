@@ -10,6 +10,7 @@
           <svg lucideCrown></svg> Premium
         </button>
       }
+      <button class="gallery-pill" (click)="openGallery()"><svg lucideFilm></svg> Mes vidéos</button>
       <button class="script-pill" (click)="openScript()"><svg lucideFileText></svg> Mon script</button>
     </div>
   </header>
@@ -30,9 +31,14 @@
       <div class="recording-badge"><i></i><strong>{{ timer() }}</strong></div>
     }
 
-    <button class="mirror-button" aria-label="Inverser le miroir" (click)="toggleMirror()">
-      <svg lucideFlipHorizontal></svg>
-    </button>
+    <div class="camera-buttons">
+      <button class="mirror-button" aria-label="Inverser le miroir" (click)="toggleMirror()">
+        <svg lucideFlipHorizontal></svg>
+      </button>
+      <button class="mirror-button" aria-label="Changer de caméra" (click)="toggleCamera()" [disabled]="isRecording()">
+        <svg lucideSwitchCamera></svg>
+      </button>
+    </div>
 
     @if (countdown(); as value) {
       <div class="countdown"><strong>{{ value }}</strong></div>
@@ -127,6 +133,39 @@
     </div>
   } @else {
     <video #preview class="hidden-preview"></video>
+  }
+
+  @if (galleryOpen()) {
+    <div class="modal-backdrop sheet-backdrop" (click)="galleryOpen.set(false)">
+      <section class="modal gallery-modal" (click)="$event.stopPropagation()">
+        <div class="modal-title">
+          <span class="modal-icon"><svg lucideFilm></svg></span>
+          <div><h2>Mes vidéos</h2><p>{{ galleryVideos().length }} vidéo(s) sauvegardée(s)</p></div>
+          <button class="icon-button" (click)="galleryOpen.set(false)"><svg lucideX></svg></button>
+        </div>
+        @if (galleryVideos().length === 0) {
+          <div class="gallery-empty">
+            <svg lucideFilm></svg>
+            <p>Aucune vidéo enregistrée.<br>Filmez et appuyez sur <strong>Enregistrer</strong>.</p>
+          </div>
+        } @else {
+          <div class="gallery-list">
+            @for (video of galleryVideos(); track video.uri) {
+              <div class="gallery-item">
+                <video [src]="videos.getWebSrc(video.uri)" controls playsinline preload="metadata" class="gallery-thumb"></video>
+                <div class="gallery-meta">
+                  <span>{{ formatDate(video.createdAt) }}</span>
+                  <div class="gallery-item-actions">
+                    <button class="round secondary" aria-label="Partager" (click)="shareGalleryVideo(video)"><svg lucideShare2></svg></button>
+                    <button class="round secondary danger" aria-label="Supprimer" (click)="deleteGalleryVideo(video)"><svg lucideTrash2></svg></button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
   }
 
   @if (paywallOpen()) {
