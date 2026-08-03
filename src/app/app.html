@@ -16,7 +16,7 @@
   </header>
 
   <main class="camera-stage">
-    <video #camera autoplay playsinline muted></video>
+    <video #camera autoplay playsinline muted [class.mirrored]="mirrored()"></video>
 
     @if (cameraError()) {
       <section class="camera-error">
@@ -32,6 +32,9 @@
     }
 
     <div class="camera-buttons">
+      <button class="mirror-button" aria-label="Inverser le miroir" (click)="toggleMirror()">
+        <svg lucideFlipHorizontal></svg>
+      </button>
       <button class="mirror-button" aria-label="Changer de caméra" (click)="toggleCamera()" [disabled]="isRecording()">
         <svg lucideSwitchCamera></svg>
       </button>
