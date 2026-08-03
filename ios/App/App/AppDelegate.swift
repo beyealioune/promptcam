@@ -7,9 +7,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        let promptCamPurple = UIColor(red: 124.0 / 255.0, green: 58.0 / 255.0, blue: 237.0 / 255.0, alpha: 1.0)
-        window?.backgroundColor = promptCamPurple
-        window?.rootViewController?.view.backgroundColor = promptCamPurple
+        window?.backgroundColor = .white
+        window?.rootViewController?.view.backgroundColor = .white
         return true
     }
 

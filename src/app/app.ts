@@ -20,7 +20,6 @@ import {
   LucideDownload,
   LucideFileText,
   LucideFilm,
-  LucideFlipHorizontal,
   LucideGauge,
   LucideInfo,
   LucidePause,
@@ -46,7 +45,7 @@ const DEFAULT_SCRIPT =
   selector: 'app-root',
   imports: [
     FormsModule,
-    LucideVideo, LucideFileText, LucideCrown, LucideCameraOff, LucideFlipHorizontal,
+    LucideVideo, LucideFileText, LucideCrown, LucideCameraOff,
     LucideChevronRight, LucideChevronLeft, LucideGauge, LucideType, LucideRotateCcw,
     LucidePlay, LucidePause, LucideSquare, LucideX, LucideCheck, LucideTrash2,
     LucideDownload, LucideInfo, LucideSwitchCamera, LucideFilm, LucideShare2,
@@ -67,7 +66,7 @@ export class App implements AfterViewInit, OnDestroy {
   readonly draft = signal('');
   readonly speed = signal(3);
   readonly fontSize = signal(24);
-  readonly mirrored = signal(true);
+  readonly mirrored = signal(false);
   readonly facingMode = signal<'user' | 'environment'>('user');
   readonly cameraError = signal(false);
   readonly scriptOpen = signal(false);
@@ -110,7 +109,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.script.set(saved.script || DEFAULT_SCRIPT);
     this.speed.set(saved.speed ?? 3);
     this.fontSize.set(saved.fontSize ?? 24);
-    this.mirrored.set(saved.mirrored ?? true);
+    this.mirrored.set(false);
     await Promise.allSettled([this.initCamera(), this.subscription.initialize()]);
   }
 
@@ -118,7 +117,10 @@ export class App implements AfterViewInit, OnDestroy {
     if (!Capacitor.isNativePlatform()) return;
     // overlay:true lets CSS env(safe-area-inset-top) fill the purple area behind the status bar
     await StatusBar.setOverlaysWebView({ overlay: true });
-    await StatusBar.setStyle({ style: Style.Light }); // white icons on purple background
+    await StatusBar.setStyle({ style: Style.Dark });
+    if (Capacitor.getPlatform() === 'android') {
+      await StatusBar.setBackgroundColor({ color: '#ffffff' });
+    }
   }
 
   ngOnDestroy(): void {
@@ -146,8 +148,7 @@ export class App implements AfterViewInit, OnDestroy {
     if (this.isRecording()) return;
     this.facingMode.update((mode) => (mode === 'user' ? 'environment' : 'user'));
     // Mirror auto-off pour la caméra arrière
-    if (this.facingMode() === 'environment') this.mirrored.set(false);
-    else this.mirrored.set(true);
+    this.mirrored.set(false);
     await this.initCamera();
     void this.persistSettings();
   }
@@ -214,8 +215,7 @@ export class App implements AfterViewInit, OnDestroy {
       const element = this.prompter.nativeElement;
       element.scrollTop += (this.speed() * 14 * elapsed) / 1000;
       if (element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
-        this.stopScroll();
-        return;
+        element.scrollTop = 0;
       }
       this.animationId = requestAnimationFrame(step);
     };
