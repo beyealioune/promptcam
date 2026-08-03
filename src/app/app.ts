@@ -109,7 +109,8 @@ export class App implements AfterViewInit, OnDestroy {
     this.script.set(saved.script || DEFAULT_SCRIPT);
     this.speed.set(saved.speed ?? 3);
     this.fontSize.set(saved.fontSize ?? 24);
-    this.mirrored.set(saved.mirrored ?? true);
+    // Always derive mirror from facing mode — never load stale saved value
+    this.mirrored.set(this.facingMode() === 'user');
     await Promise.allSettled([this.initCamera(), this.subscription.initialize()]);
   }
 
@@ -411,7 +412,6 @@ export class App implements AfterViewInit, OnDestroy {
       script: this.script(),
       speed: this.speed(),
       fontSize: this.fontSize(),
-      mirrored: this.mirrored(),
     };
     await this.storage.saveSettings(settings);
   }

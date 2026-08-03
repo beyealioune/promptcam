@@ -2,7 +2,6 @@ export interface PrompterSettings {
   script: string;
   speed: number;
   fontSize: number;
-  mirrored: boolean;
 }
 
 export interface SavedVideo {
