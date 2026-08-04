@@ -31,7 +31,12 @@ export class SubscriptionService {
       Purchases.getOfferings(),
     ]);
     this.applyCustomerInfo(customerInfo);
-    this.currentPackage = offerings.current?.monthly ?? offerings.current?.availablePackages[0] ?? null;
+    // Try the named offering first, then fall back to the default current offering
+    const targetOffering = offerings.all[environment.revenueCat.offeringId] ?? offerings.current;
+    this.currentPackage =
+      targetOffering?.monthly ??
+      targetOffering?.availablePackages[0] ??
+      null;
     const price = this.currentPackage?.product.priceString;
     if (price) this.price.set(`${price} / mois`);
     await Purchases.addCustomerInfoUpdateListener((info) => this.applyCustomerInfo(info));
