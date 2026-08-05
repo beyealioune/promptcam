@@ -9,6 +9,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         window?.backgroundColor = .white
         window?.rootViewController?.view.backgroundColor = .white
+        // Start full screen; Angular restores the white status bar in the main app.
+        (window?.rootViewController as? CAPBridgeViewController)?.setStatusBarVisible(false)
         return true
     }
 

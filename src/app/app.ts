@@ -130,7 +130,10 @@ export class App implements AfterViewInit, OnDestroy {
     document.documentElement.lang = this.i18n.language();
     window.setTimeout(() => {
       this.onboarding.set(hasLanguage ? 'app' : 'language');
-      if (hasLanguage) void this.initializeApp();
+      if (hasLanguage) {
+        void this.showAppStatusBar();
+        void this.initializeApp();
+      }
     }, 1200);
   }
 
@@ -142,6 +145,7 @@ export class App implements AfterViewInit, OnDestroy {
       this.script.set('Welcome to PromptCam! Tap “My script” to write your text. Adjust the speed, then start recording.');
     }
     this.onboarding.set('app');
+    await this.showAppStatusBar();
     await this.initializeApp();
   }
 
@@ -151,12 +155,19 @@ export class App implements AfterViewInit, OnDestroy {
 
   private async configureStatusBar(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
-    // Keep the native white status bar outside the WebView on both platforms.
+    await StatusBar.setOverlaysWebView({ overlay: false });
+    // The splash and language choice are intentionally full screen.
+    await StatusBar.hide();
+  }
+
+  private async showAppStatusBar(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
     await StatusBar.setOverlaysWebView({ overlay: false });
     await StatusBar.setStyle({ style: Style.Dark });
     if (Capacitor.getPlatform() === 'android') {
       await StatusBar.setBackgroundColor({ color: '#ffffff' });
     }
+    await StatusBar.show();
   }
 
   ngOnDestroy(): void {

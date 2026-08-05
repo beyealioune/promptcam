@@ -12,12 +12,12 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
-        .package(name: "CapacitorCommunityMedia", path: "../../../node_modules/@capacitor-community/media"),
-        .package(name: "CapacitorFilesystem", path: "../../../node_modules/@capacitor/filesystem"),
-        .package(name: "CapacitorPreferences", path: "../../../node_modules/@capacitor/preferences"),
-        .package(name: "CapacitorShare", path: "../../../node_modules/@capacitor/share"),
-        .package(name: "CapacitorStatusBar", path: "../../../node_modules/@capacitor/status-bar"),
-        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../node_modules/@revenuecat/purchases-capacitor")
+        .package(name: "CapacitorCommunityMedia", path: "..\..\..\node_modules\@capacitor-community\media"),
+        .package(name: "CapacitorFilesystem", path: "..\..\..\node_modules\@capacitor\filesystem"),
+        .package(name: "CapacitorPreferences", path: "..\..\..\node_modules\@capacitor\preferences"),
+        .package(name: "CapacitorShare", path: "..\..\..\node_modules\@capacitor\share"),
+        .package(name: "CapacitorStatusBar", path: "..\..\..\node_modules\@capacitor\status-bar"),
+        .package(name: "RevenuecatPurchasesCapacitor", path: "..\..\..\node_modules\@revenuecat\purchases-capacitor")
     ],
     targets: [
         .target(

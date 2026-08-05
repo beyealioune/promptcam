@@ -57,5 +57,7 @@
 	<true/>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDarkContent</string>
+	<key>UIStatusBarHidden</key>
+	<true/>
 </dict>
 </plist>

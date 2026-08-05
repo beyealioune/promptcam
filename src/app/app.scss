@@ -27,13 +27,16 @@ svg { display: inline-flex; width: 1em; height: 1em; }
 }
 .onboarding img { width: min(52vw,240px); aspect-ratio: 1; object-fit: contain; border-radius: 25%; filter: drop-shadow(0 22px 35px rgba(59,130,246,.22)); }
 .onboarding h1 { margin: 22px 0 0; font-size: clamp(35px,9vw,54px); letter-spacing: -1.8px; }
-.onboarding h2 { margin: 30px 0 7px; font-size: 22px; }
-.onboarding p { max-width: 350px; margin: 0; color: #cbd5e1; font-size: 13px; line-height: 1.55; }
 .splash-loader { width: 30px; height: 30px; margin-top: 32px; border: 3px solid rgba(255,255,255,.2); border-top-color: #c084fc; border-radius: 50%; animation: spin .8s linear infinite; }
-.language-buttons { width: min(100%,380px); display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
-.language-buttons button { padding: 17px 12px; display: flex; align-items: center; gap: 11px; border: 1px solid rgba(196,181,253,.35); border-radius: 17px; color: white; background: rgba(255,255,255,.09); }
-.language-buttons b { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: linear-gradient(135deg,#2563eb,#a855f7); }
-.language-buttons span { font-weight: 750; }
+.language-flags { display: flex; align-items: center; justify-content: center; gap: clamp(22px,8vw,42px); margin-top: 36px; }
+.language-flags button {
+  width: clamp(108px,31vw,145px); aspect-ratio: 3 / 2; padding: 0; overflow: hidden;
+  border: 3px solid rgba(255,255,255,.72); border-radius: 18px; background: transparent;
+  box-shadow: 0 14px 30px rgba(0,0,0,.35); transition: transform .16s ease, border-color .16s ease;
+}
+.language-flags button:active { transform: scale(.94); border-color: #c4b5fd; }
+.language-flags button:focus-visible { outline: 3px solid #c4b5fd; outline-offset: 5px; }
+.language-flags img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; filter: none; }
 
 .app-header {
   min-height: 68px;

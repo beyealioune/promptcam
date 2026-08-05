@@ -6,11 +6,13 @@
       @if (onboarding() === 'splash') {
         <span class="splash-loader" aria-label="Chargement"></span>
       } @else {
-        <h2>{{ t('chooseLanguage') }}</h2>
-        <p>{{ t('chooseLanguageSub') }}</p>
-        <div class="language-buttons">
-          <button (click)="selectLanguage('fr')"><b>FR</b><span>{{ t('french') }}</span></button>
-          <button (click)="selectLanguage('en')"><b>EN</b><span>{{ t('english') }}</span></button>
+        <div class="language-flags" role="group" aria-label="Language selection">
+          <button type="button" aria-label="Français" (click)="selectLanguage('fr')">
+            <img src="assets/france.png" alt="Drapeau français" />
+          </button>
+          <button type="button" aria-label="English" (click)="selectLanguage('en')">
+            <img src="assets/usa.png" alt="United States flag" />
+          </button>
         </div>
       }
     </section>
