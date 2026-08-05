@@ -37,6 +37,7 @@ import { FREE_CHARACTER_LIMIT, PrompterSettings, SavedVideo } from './core/model
 import { StorageService } from './core/services/storage.service';
 import { SubscriptionService } from './core/services/subscription.service';
 import { VideoService } from './core/services/video.service';
+import { AppLanguage, I18nService, TranslationKey } from './core/services/i18n.service';
 
 const DEFAULT_SCRIPT =
   'Bienvenue sur PromptCam ! Appuyez sur « Mon script » pour écrire votre texte. Réglez la vitesse puis lancez votre enregistrement.';
@@ -56,11 +57,16 @@ const DEFAULT_SCRIPT =
 export class App implements AfterViewInit, OnDestroy {
   @ViewChild('camera') camera!: ElementRef<HTMLVideoElement>;
   @ViewChild('prompter') prompter!: ElementRef<HTMLDivElement>;
+  @ViewChild('prompterFirst') prompterFirst!: ElementRef<HTMLParagraphElement>;
+  @ViewChild('prompterRepeat') prompterRepeat!: ElementRef<HTMLParagraphElement>;
   @ViewChild('preview') preview!: ElementRef<HTMLVideoElement>;
 
   readonly subscription = inject(SubscriptionService);
   readonly videos = inject(VideoService);
   private readonly storage = inject(StorageService);
+  readonly i18n = inject(I18nService);
+
+  readonly onboarding = signal<'splash' | 'language' | 'app'>('splash');
 
   readonly script = signal(DEFAULT_SCRIPT);
   readonly draft = signal('');
@@ -94,6 +100,12 @@ export class App implements AfterViewInit, OnDestroy {
     { label: '📸 Story face caméra', text: 'Coucou tout le monde ! J’espère que vous allez bien. Petite story aujourd’hui pour répondre à une question que vous me posez très souvent…' },
   ];
 
+  readonly localizedTemplates = computed(() => this.i18n.language() === 'fr' ? this.templates : [
+    { label: '⚡ TikTok hook', text: 'Stop scrolling! Today I am sharing the tip that completely changed the way I create videos. Here are the three steps to remember…' },
+    { label: '🛍️ Product presentation', text: 'Discover our brand-new creation. It was designed to make your everyday life easier. Watch the difference live…' },
+    { label: '📸 Talking-head story', text: 'Hi everyone! I hope you are doing well. Today I want to answer a question you ask me very often…' },
+  ]);
+
   private stream: MediaStream | null = null;
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
@@ -106,19 +118,41 @@ export class App implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     await this.configureStatusBar();
-    const saved = await this.storage.loadSettings();
+    const [hasLanguage, saved] = await Promise.all([
+      this.i18n.initialize(),
+      this.storage.loadSettings(),
+    ]);
     this.script.set(saved.script || DEFAULT_SCRIPT);
     this.speed.set(saved.speed ?? 3);
     this.fontSize.set(saved.fontSize ?? 24);
     // Always derive mirror from facing mode — never load stale saved value
     this.mirrored.set(this.facingMode() === 'user');
+    document.documentElement.lang = this.i18n.language();
+    window.setTimeout(() => {
+      this.onboarding.set(hasLanguage ? 'app' : 'language');
+      if (hasLanguage) void this.initializeApp();
+    }, 1200);
+  }
+
+  t(key: TranslationKey): string { return this.i18n.t(key); }
+
+  async selectLanguage(language: AppLanguage): Promise<void> {
+    await this.i18n.select(language);
+    if (language === 'en' && this.script() === DEFAULT_SCRIPT) {
+      this.script.set('Welcome to PromptCam! Tap “My script” to write your text. Adjust the speed, then start recording.');
+    }
+    this.onboarding.set('app');
+    await this.initializeApp();
+  }
+
+  private async initializeApp(): Promise<void> {
     await Promise.allSettled([this.initCamera(), this.subscription.initialize()]);
   }
 
   private async configureStatusBar(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
-    // overlay:true lets CSS env(safe-area-inset-top) fill the purple area behind the status bar
-    await StatusBar.setOverlaysWebView({ overlay: true });
+    // Keep the native white status bar outside the WebView on both platforms.
+    await StatusBar.setOverlaysWebView({ overlay: false });
     await StatusBar.setStyle({ style: Style.Dark });
     if (Capacitor.getPlatform() === 'android') {
       await StatusBar.setBackgroundColor({ color: '#ffffff' });
@@ -216,8 +250,9 @@ export class App implements AfterViewInit, OnDestroy {
       this.lastFrame = now;
       const element = this.prompter.nativeElement;
       element.scrollTop += (this.speed() * 14 * elapsed) / 1000;
-      if (element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
-        element.scrollTop = 0;
+      const cycle = this.prompterRepeat.nativeElement.offsetTop - this.prompterFirst.nativeElement.offsetTop;
+      if (cycle > 0 && element.scrollTop >= cycle) {
+        element.scrollTop -= cycle;
       }
       this.animationId = requestAnimationFrame(step);
     };
@@ -389,7 +424,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('fr-FR', {
+    return new Date(iso).toLocaleDateString(this.i18n.locale(), {
       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     });
   }

@@ -1,17 +1,33 @@
 <div class="app-shell">
+  @if (onboarding() !== 'app') {
+    <section class="onboarding" [class.language-step]="onboarding() === 'language'">
+      <img src="assets/logopromptcam.png" alt="Logo PromptCam" />
+      <h1>PromptCam</h1>
+      @if (onboarding() === 'splash') {
+        <span class="splash-loader" aria-label="Chargement"></span>
+      } @else {
+        <h2>{{ t('chooseLanguage') }}</h2>
+        <p>{{ t('chooseLanguageSub') }}</p>
+        <div class="language-buttons">
+          <button (click)="selectLanguage('fr')"><b>FR</b><span>{{ t('french') }}</span></button>
+          <button (click)="selectLanguage('en')"><b>EN</b><span>{{ t('english') }}</span></button>
+        </div>
+      }
+    </section>
+  }
   <header class="app-header">
     <div class="brand">
       <span class="brand-icon"><svg lucideVideo></svg></span>
-      <span><strong>PromptCam</strong><small>Studio mobile</small></span>
+      <span><strong>PromptCam</strong><small>{{ t('studio') }}</small></span>
     </div>
     <div class="header-actions">
       @if (!subscription.isPremium()) {
         <button class="premium-pill" (click)="paywallOpen.set(true)">
-          <svg lucideCrown></svg> Premium
+          <svg lucideCrown></svg> {{ t('premium') }}
         </button>
       }
-      <button class="gallery-pill" (click)="openGallery()"><svg lucideFilm></svg> Mes vidéos</button>
-      <button class="script-pill" (click)="openScript()"><svg lucideFileText></svg> Mon script</button>
+      <button class="gallery-pill" (click)="openGallery()"><svg lucideFilm></svg> {{ t('videos') }}</button>
+      <button class="script-pill" (click)="openScript()"><svg lucideFileText></svg> {{ t('script') }}</button>
     </div>
   </header>
 
@@ -21,9 +37,9 @@
     @if (cameraError()) {
       <section class="camera-error">
         <span><svg lucideCameraOff></svg></span>
-        <h2>Caméra non accessible</h2>
-        <p>Autorisez l’accès à la caméra et au micro pour utiliser PromptCam.</p>
-        <button class="primary-button" (click)="initCamera()">Réessayer</button>
+        <h2>{{ t('cameraError') }}</h2>
+        <p>{{ t('cameraHelp') }}</p>
+        <button class="primary-button" (click)="initCamera()">{{ t('retry') }}</button>
       </section>
     }
 
@@ -46,7 +62,11 @@
 
     <section class="prompter-wrap">
       <div #prompter class="prompter-box">
-        <p [style.font-size.px]="fontSize()">{{ script() }}</p>
+        <div class="prompter-track">
+          <p #prompterFirst [style.font-size.px]="fontSize()">{{ script() }}</p>
+          <div class="loop-gap" aria-hidden="true"></div>
+          <p #prompterRepeat aria-hidden="true" [style.font-size.px]="fontSize()">{{ script() }}</p>
+        </div>
       </div>
     </section>
 
@@ -60,11 +80,11 @@
   <footer class="controls">
     <div class="settings-grid">
       <label>
-        <span><b><svg lucideGauge></svg> Vitesse</b><strong>{{ speed() }}</strong></span>
+        <span><b><svg lucideGauge></svg> {{ t('speed') }}</b><strong>{{ speed() }}</strong></span>
         <input type="range" min="1" max="10" [value]="speed()" (input)="setSpeed($any($event.target).value)" />
       </label>
       <label>
-        <span><b><svg lucideType></svg> Taille</b><strong>{{ fontSize() }}px</strong></span>
+        <span><b><svg lucideType></svg> {{ t('size') }}</b><strong>{{ fontSize() }}px</strong></span>
         <input type="range" min="16" max="42" [value]="fontSize()" (input)="setFontSize($any($event.target).value)" />
       </label>
     </div>
@@ -84,13 +104,13 @@
       <section class="modal script-modal" (click)="$event.stopPropagation()">
         <div class="modal-title">
           <span class="modal-icon"><svg lucideFileText></svg></span>
-          <div><h2>Votre script vidéo</h2><p>Il sera sauvegardé sur cet appareil.</p></div>
+          <div><h2>{{ t('editorTitle') }}</h2><p>{{ t('savedDevice') }}</p></div>
           <button class="icon-button" (click)="scriptOpen.set(false)"><svg lucideX></svg></button>
         </div>
         <div class="template-area">
-          <small>Exemples rapides</small>
+          <small>{{ t('examples') }}</small>
           <div class="template-list">
-            @for (template of templates; track template.label) {
+            @for (template of localizedTemplates(); track template.label) {
               <button (click)="useTemplate(template.text)">{{ template.label }}</button>
             }
           </div>
@@ -99,20 +119,20 @@
           <textarea
             [ngModel]="draft()"
             (ngModelChange)="updateDraft($event)"
-            placeholder="Écrivez ou collez votre texte ici…"
+            [placeholder]="t('placeholder')"
             autofocus
           ></textarea>
           <span [class.limit]="remainingCharacters() < 40">
-            @if (subscription.isPremium()) { {{ draft().length }} caractères }
-            @else { {{ remainingCharacters() }} restants }
+            @if (subscription.isPremium()) { {{ draft().length }} {{ t('chars') }} }
+            @else { {{ remainingCharacters() }} {{ t('remaining') }} }
           </span>
         </div>
         @if (!subscription.isPremium()) {
           <button class="limit-notice" (click)="paywallOpen.set(true)">
-            <svg lucideCrown></svg> Version gratuite : {{ 280 }} caractères maximum. Débloquer l’illimité
+            <svg lucideCrown></svg> {{ t('freeLimit') }}
           </button>
         }
-        <button class="primary-button full" (click)="saveScript()"><svg lucideCheck></svg> Appliquer au prompteur</button>
+        <button class="primary-button full" (click)="saveScript()"><svg lucideCheck></svg> {{ t('apply') }}</button>
       </section>
     </div>
   }
@@ -122,12 +142,12 @@
       <section class="modal preview-modal">
         <div class="success-title">
           <span><svg lucideCheck></svg></span>
-          <div><h2>Vidéo enregistrée !</h2><p>Prête à être publiée sur vos réseaux</p></div>
+          <div><h2>{{ t('recorded') }}</h2><p>{{ t('readySocial') }}</p></div>
         </div>
         <video #preview [src]="previewSrc()" controls playsinline></video>
         <div class="preview-actions">
-          <button class="delete-button" (click)="deleteVideo()"><svg lucideTrash2></svg> Supprimer</button>
-          <button class="primary-button" [disabled]="busy()" (click)="saveVideo()"><svg lucideDownload></svg> Enregistrer</button>
+          <button class="delete-button" (click)="deleteVideo()"><svg lucideTrash2></svg> {{ t('delete') }}</button>
+          <button class="primary-button" [disabled]="busy()" (click)="saveVideo()"><svg lucideDownload></svg> {{ t('save') }}</button>
         </div>
       </section>
     </div>
@@ -140,13 +160,13 @@
       <section class="modal gallery-modal" (click)="$event.stopPropagation()">
         <div class="modal-title">
           <span class="modal-icon"><svg lucideFilm></svg></span>
-          <div><h2>Mes vidéos</h2><p>{{ galleryVideos().length }} vidéo(s) sauvegardée(s)</p></div>
+          <div><h2>{{ t('myVideos') }}</h2><p>{{ galleryVideos().length }} {{ t('savedVideos') }}</p></div>
           <button class="icon-button" (click)="galleryOpen.set(false)"><svg lucideX></svg></button>
         </div>
         @if (galleryVideos().length === 0) {
           <div class="gallery-empty">
             <svg lucideFilm></svg>
-            <p>Aucune vidéo enregistrée.<br>Filmez et appuyez sur <strong>Enregistrer</strong>.</p>
+            <p>{{ t('emptyVideos') }}<br>{{ t('emptyAction') }}</p>
           </div>
         } @else {
           <div class="gallery-list">
@@ -174,19 +194,19 @@
         <button class="icon-button close-paywall" (click)="paywallOpen.set(false)"><svg lucideX></svg></button>
         <span class="crown"><svg lucideCrown></svg></span>
         <small>PROMPTCAM PREMIUM</small>
-        <h2>Parlez sans limite.<br />Créez sans coupure.</h2>
-        <p>Écrivez des scripts de n’importe quelle longueur et gardez votre regard face caméra.</p>
+        <h2 class="pre-line">{{ t('unlimitedTitle') }}</h2>
+        <p>{{ t('unlimitedBody') }}</p>
         <ul>
-          <li><svg lucideCheck></svg> Scripts longs illimités</li>
-          <li><svg lucideCheck></svg> Enregistrement et partage de vos vidéos</li>
-          <li><svg lucideCheck></svg> Restauration sur vos appareils</li>
+          <li><svg lucideCheck></svg> {{ t('unlimitedScripts') }}</li>
+          <li><svg lucideCheck></svg> {{ t('recordShare') }}</li>
+          <li><svg lucideCheck></svg> {{ t('restoreDevices') }}</li>
         </ul>
-        <div class="price"><strong>{{ subscription.price() }}</strong><span>Renouvellement automatique, annulable à tout moment.</span></div>
+        <div class="price"><strong>{{ subscription.price() }}</strong><span>{{ t('autoRenew') }}</span></div>
         <button class="primary-button full subscribe" [disabled]="busy()" (click)="buyPremium()">
-          {{ busy() ? 'Chargement…' : 'Passer à Premium' }}
+          {{ busy() ? t('loading') : t('subscribe') }}
         </button>
-        <button class="restore" [disabled]="busy()" (click)="restore()">Restaurer mes achats</button>
-        <p class="legal">Le paiement est géré par l’App Store ou Google Play. L’abonnement se renouvelle automatiquement sauf annulation.</p>
+        <button class="restore" [disabled]="busy()" (click)="restore()">{{ t('restore') }}</button>
+        <p class="legal">{{ t('legal') }}</p>
       </section>
     </div>
   }
