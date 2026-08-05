@@ -457,10 +457,10 @@ export class App implements AfterViewInit, OnDestroy {
     try {
       if (await this.subscription.purchasePremium()) {
         this.paywallOpen.set(false);
-        this.showToast('Bienvenue dans PromptCam Premium !');
+        this.showToast(this.t('purchaseSuccess'));
       }
     } catch {
-      this.showToast('Offre indisponible : vérifiez la configuration RevenueCat');
+      this.showToast(this.t('offeringUnavailable'));
     } finally {
       this.busy.set(false);
     }
@@ -470,10 +470,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.busy.set(true);
     try {
       const restored = await this.subscription.restorePurchases();
-      this.showToast(restored ? 'Achats restaurés' : 'Aucun abonnement actif trouvé');
+      this.showToast(this.t(restored ? 'purchasesRestored' : 'noActiveSubscription'));
       if (restored) this.paywallOpen.set(false);
     } catch {
-      this.showToast('Restauration impossible pour le moment');
+      this.showToast(this.t('restoreFailed'));
     } finally {
       this.busy.set(false);
     }

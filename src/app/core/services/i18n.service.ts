@@ -17,6 +17,10 @@ const translations = {
     unlimitedScripts: 'Scripts longs illimités', recordShare: 'Enregistrement et partage de vos vidéos', restoreDevices: 'Restauration sur vos appareils',
     autoRenew: 'Renouvellement automatique, annulable à tout moment.', subscribe: 'Passer à Premium', loading: 'Chargement…', restore: 'Restaurer mes achats',
     legal: 'Le paiement est géré par l’App Store ou Google Play. L’abonnement se renouvelle automatiquement sauf annulation.',
+    perMonth: '/ mois', premiumActiveShort: 'Actif', premiumActiveTitle: 'Votre abonnement Premium est actif',
+    premiumActiveBody: 'Vous pouvez écrire des scripts de longueur illimitée et utiliser toutes les fonctions Premium.',
+    purchaseSuccess: 'Bienvenue dans PromptCam Premium !', offeringUnavailable: 'Offre indisponible. Réessayez dans quelques instants.',
+    purchasesRestored: 'Achats restaurés', noActiveSubscription: 'Aucun abonnement actif trouvé', restoreFailed: 'Restauration impossible pour le moment',
     chooseLanguage: 'Choisissez votre langue', chooseLanguageSub: 'Vous pourrez la modifier plus tard dans les réglages de votre appareil.', french: 'Français', english: 'English',
   },
   en: {
@@ -31,6 +35,10 @@ const translations = {
     unlimitedScripts: 'Unlimited long scripts', recordShare: 'Record and share your videos', restoreDevices: 'Restore on your devices',
     autoRenew: 'Auto-renewing, cancel anytime.', subscribe: 'Go Premium', loading: 'Loading…', restore: 'Restore purchases',
     legal: 'Payment is handled by the App Store or Google Play. The subscription renews automatically unless cancelled.',
+    perMonth: '/ month', premiumActiveShort: 'Active', premiumActiveTitle: 'Your Premium subscription is active',
+    premiumActiveBody: 'You can write scripts of unlimited length and use all Premium features.',
+    purchaseSuccess: 'Welcome to PromptCam Premium!', offeringUnavailable: 'Offer unavailable. Please try again in a moment.',
+    purchasesRestored: 'Purchases restored', noActiveSubscription: 'No active subscription found', restoreFailed: 'Unable to restore purchases right now',
     chooseLanguage: 'Choose your language', chooseLanguageSub: 'Your choice will be saved on this device.', french: 'Français', english: 'English',
   },
 } as const;

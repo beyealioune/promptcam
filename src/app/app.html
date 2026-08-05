@@ -23,11 +23,10 @@
       <span><strong>PromptCam</strong><small>{{ t('studio') }}</small></span>
     </div>
     <div class="header-actions">
-      @if (!subscription.isPremium()) {
-        <button class="premium-pill" (click)="paywallOpen.set(true)">
-          <svg lucideCrown></svg> {{ t('premium') }}
-        </button>
-      }
+      <button class="premium-pill" [class.active]="subscription.isPremium()" (click)="paywallOpen.set(true)">
+        <svg lucideCrown></svg>
+        {{ subscription.isPremium() ? t('premiumActiveShort') : t('premium') }}
+      </button>
       <button class="gallery-pill" (click)="openGallery()"><svg lucideFilm></svg> {{ t('videos') }}</button>
       <button class="script-pill" (click)="openScript()"><svg lucideFileText></svg> {{ t('script') }}</button>
     </div>
@@ -196,17 +195,19 @@
         <button class="icon-button close-paywall" (click)="paywallOpen.set(false)"><svg lucideX></svg></button>
         <span class="crown"><svg lucideCrown></svg></span>
         <small>PROMPTCAM PREMIUM</small>
-        <h2 class="pre-line">{{ t('unlimitedTitle') }}</h2>
-        <p>{{ t('unlimitedBody') }}</p>
+        <h2 class="pre-line">{{ t(subscription.isPremium() ? 'premiumActiveTitle' : 'unlimitedTitle') }}</h2>
+        <p>{{ t(subscription.isPremium() ? 'premiumActiveBody' : 'unlimitedBody') }}</p>
         <ul>
           <li><svg lucideCheck></svg> {{ t('unlimitedScripts') }}</li>
           <li><svg lucideCheck></svg> {{ t('recordShare') }}</li>
           <li><svg lucideCheck></svg> {{ t('restoreDevices') }}</li>
         </ul>
-        <div class="price"><strong>{{ subscription.price() }}</strong><span>{{ t('autoRenew') }}</span></div>
-        <button class="primary-button full subscribe" [disabled]="busy()" (click)="buyPremium()">
-          {{ busy() ? t('loading') : t('subscribe') }}
-        </button>
+        @if (!subscription.isPremium()) {
+          <div class="price"><strong>{{ subscription.price() }} {{ t('perMonth') }}</strong><span>{{ t('autoRenew') }}</span></div>
+          <button class="primary-button full subscribe" [disabled]="busy()" (click)="buyPremium()">
+            {{ busy() ? t('loading') : t('subscribe') }}
+          </button>
+        }
         <button class="restore" [disabled]="busy()" (click)="restore()">{{ t('restore') }}</button>
         <p class="legal">{{ t('legal') }}</p>
       </section>

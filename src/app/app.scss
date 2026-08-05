@@ -68,6 +68,7 @@ svg { display: inline-flex; width: 1em; height: 1em; }
   align-items: center; gap: 5px; color: #6d28d9; background: #f5f3ff; font-size: 11px; font-weight: 700;
 }
 .premium-pill { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+.premium-pill.active { background: #ecfdf5; border-color: #86efac; color: #15803d; }
 .gallery-pill { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
 
 .camera-stage { flex: 1; min-height: 0; position: relative; overflow: hidden; background: #020617; }

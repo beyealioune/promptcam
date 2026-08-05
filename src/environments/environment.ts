@@ -2,7 +2,7 @@ export const environment = {
   production: false,
   revenueCat: {
     appleApiKey: 'appl_jrdoayXSuYitPVhDpBQVqpwlvYv',
-    googleApiKey: 'GOOGL_REVENUECAT_PUBLIC_SDK_KEY',
+    googleApiKey: 'goog_iGjZzlqTPkiWqGQxtDqTPmlLtYI',
     entitlementId: 'Premium Access',
     offeringId: 'promptcampremium',
   },

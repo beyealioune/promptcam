@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
 export class SubscriptionService {
   readonly isPremium = signal(false);
   readonly isReady = signal(false);
-  readonly price = signal('9,99 € / mois');
+  readonly price = signal('9,99 €');
   private currentPackage: PurchasesPackage | null = null;
 
   async initialize(): Promise<void> {
@@ -38,7 +38,7 @@ export class SubscriptionService {
       targetOffering?.availablePackages[0] ??
       null;
     const price = this.currentPackage?.product.priceString;
-    if (price) this.price.set(`${price} / mois`);
+    if (price) this.price.set(price);
     await Purchases.addCustomerInfoUpdateListener((info) => this.applyCustomerInfo(info));
     this.isReady.set(true);
   }
