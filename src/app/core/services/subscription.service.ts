@@ -31,12 +31,18 @@ export class SubscriptionService {
       Purchases.getOfferings(),
     ]);
     this.applyCustomerInfo(customerInfo);
-    // Try the named offering first, then fall back to the default current offering
+    const expectedProductId = Capacitor.getPlatform() === 'android'
+      ? 'promptcam_monthly:monthly'
+      : 'promptcampremium';
     const targetOffering = offerings.all[environment.revenueCat.offeringId] ?? offerings.current;
-    this.currentPackage =
-      targetOffering?.monthly ??
-      targetOffering?.availablePackages[0] ??
-      null;
+    const allPackages = Object.values(offerings.all)
+      .flatMap((offering) => offering.availablePackages);
+    this.currentPackage = allPackages.find(
+      (availablePackage) => availablePackage.product.identifier === expectedProductId,
+    ) ?? targetOffering?.monthly ?? targetOffering?.availablePackages[0] ?? null;
+    if (!this.currentPackage) {
+      console.error(`RevenueCat product unavailable: ${expectedProductId}`);
+    }
     const price = this.currentPackage?.product.priceString;
     if (price) this.price.set(price);
     await Purchases.addCustomerInfoUpdateListener((info) => this.applyCustomerInfo(info));

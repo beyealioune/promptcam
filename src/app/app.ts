@@ -179,17 +179,46 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   async initCamera(): Promise<void> {
+    this.stream?.getTracks().forEach((track) => track.stop());
+
+    const videoOptions: MediaTrackConstraints[] = [
+      { facingMode: this.facingMode(), width: { ideal: 1920 }, height: { ideal: 1080 } },
+      { facingMode: this.facingMode() },
+      {},
+    ];
+
+    let videoStream: MediaStream | null = null;
+    let lastError: unknown;
+    for (const video of videoOptions) {
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!videoStream) {
+      console.error('Unable to open camera', lastError);
+      this.cameraError.set(true);
+      return;
+    }
+
+    // Audio is optional here: a microphone issue must never hide a working camera.
     try {
-      this.stream?.getTracks().forEach((track) => track.stop());
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: this.facingMode(), width: { ideal: 1920 }, height: { ideal: 1080 } },
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        video: false,
         audio: { echoCancellation: true, noiseSuppression: true },
       });
-      this.camera.nativeElement.srcObject = this.stream;
-      this.cameraError.set(false);
-    } catch {
-      this.cameraError.set(true);
+      audioStream.getAudioTracks().forEach((track) => videoStream!.addTrack(track));
+    } catch (error) {
+      console.warn('Camera opened without microphone', error);
     }
+
+    this.stream = videoStream;
+    this.camera.nativeElement.srcObject = videoStream;
+    await this.camera.nativeElement.play().catch(() => undefined);
+    this.cameraError.set(false);
   }
 
   async toggleCamera(): Promise<void> {
