@@ -49,10 +49,12 @@
     }
 
     <div class="camera-buttons">
+      <!-- Bouton effet miroir masqué temporairement.
       <button class="mirror-button" aria-label="Inverser le miroir" (click)="toggleMirror()">
         <svg lucideFlipHorizontal></svg>
       </button>
-      <button class="mirror-button" aria-label="Changer de caméra" (click)="toggleCamera()" [disabled]="isRecording()">
+      -->
+      <button class="mirror-button camera-switch-button" aria-label="Changer de caméra" (click)="toggleCamera()" [disabled]="isRecording()">
         <svg lucideSwitchCamera></svg>
       </button>
     </div>

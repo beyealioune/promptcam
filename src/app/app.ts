@@ -163,7 +163,8 @@ export class App implements AfterViewInit, OnDestroy {
   private async showAppStatusBar(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
     await StatusBar.setOverlaysWebView({ overlay: false });
-    await StatusBar.setStyle({ style: Style.Dark });
+    // Capacitor's LIGHT style means dark system icons, suited to our white bar.
+    await StatusBar.setStyle({ style: Style.Light });
     if (Capacitor.getPlatform() === 'android') {
       await StatusBar.setBackgroundColor({ color: '#ffffff' });
     }
