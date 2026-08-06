@@ -4,9 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.beyealioune.promptcam',
   appName: 'PromptCam',
   webDir: 'dist/promptcam/browser',
-  backgroundColor: '#020617',
+  backgroundColor: '#ffffff',
   ios: {
-    contentInset: 'always',
+    contentInset: 'never',
     allowsLinkPreview: false,
   },
   android: {
